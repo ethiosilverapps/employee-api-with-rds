@@ -17,6 +17,15 @@ const connection = mysql.createConnection({
   port: process.env.RDS_PORT,
 });
 
+connection.connect(function(err) {
+  if (err) {
+    console.error('error connecting to DB: ' + err.stack);
+    process.exit(1);
+  }
+ 
+  console.log('connected to DB as id ' + connection.threadId);
+});
+
 //You can use this endpoint to check the health status of the server
 app.get("/", async (req, res) => {
   console.log("GET: / called");
@@ -38,8 +47,8 @@ app.get("/server-info", async (req, res) => {
 app.get("/employees", async (req, res) => {
   console.log("GET: /employees called");
 
-  var sql = `SELECT emp.employee_id as id, p.first_name, p.last_name, j.title_name
-  FROM emp.employee e, emp.person p, emp.job_title j
+  var sql = `SELECT e.employee_id as id, p.first_name, p.last_name, j.title_name
+  FROM emp_db.employee e, emp_db.person p, emp_db.job_title j
   WHERE e.person_id=p.person_id AND e.job_title_id=j.job_title_id`;
   connection.query(sql, function (err, result, fields) {
     if (err) {
@@ -56,7 +65,7 @@ app.get("/get-all-person", async (req, res) => {
   console.log("GET: /get-all-person");
 
   var sql = `SELECT p.person_id as id, p.first_name, p.last_name, p.email
-  FROM emp.person p`;
+  FROM emp_db.person p`;
   connection.query(sql, function (err, result, fields) {
     if (err) {
       res.status(500);
@@ -87,14 +96,15 @@ app.post("/person", async (req, res) => {
     typeof lastName === "string" &&
     typeof email === "string"
   ) {
-    var query = `INSERT INTO emp.person(first_name, last_name, email) VALUES (?, ?, ?);`;
-    connection
-      .query(query, [
+    var query = `INSERT INTO emp_db.person(first_name, last_name, email) VALUES (?, ?, ?);`;
+    connection.query(
+      query,
+      [
         connection.escape(firstName),
         connection.escape(lastName),
         connection.escape(email),
-      ])
-      .then((err, result) => {
+      ],
+      function (err, result, fields) {
         if (err) {
           res.status(500);
           res.send("Unable to process your request.");
@@ -102,7 +112,8 @@ app.post("/person", async (req, res) => {
 
         res.status(200);
         res.send({ msg: "Employee was added successfully!" });
-      });
+      }
+    );
   } else {
     res.status(400);
     res.send({
@@ -119,9 +130,9 @@ app.delete("/person", async (req, res) => {
 
   //very simple verification
   if (typeof id === "number") {
-    var sql = "DELETE FROM emp.person p WHERE p.person_id=?";
+    var sql = "DELETE FROM emp_db.person p WHERE p.person_id=?";
 
-    connection.query(sql, [id]).then((err, result) => {
+    connection.query(sql, [id], function (err, result, fields) {
       if (err) {
         res.status(500);
         res.send("Unable to process your request.");

@@ -20,6 +20,13 @@ This API Server example is intended to be used as an instrument for AWS RDS tuto
 
 ## Running the server on EC2
 
+- Export the following environment variables first 
+```
+export RDS_HOSTNAME=<RDS Database URL>
+export RDS_USERNAME=<RDS DB Username>
+export RDS_PASSWORD=<RDS DB Password>
+export RDS_PORT=<RDS DB Port>
+```
 - Run the server starter script `./start_server.sh` (You can pass `-s` flag to skip installing npm package)
 
 ## Available API Endpoints
